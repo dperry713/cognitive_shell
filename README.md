@@ -1,72 +1,87 @@
 # Adaptive AI OS (Distributed State Machine Kernel Prototype)
 
-An experimental AI-driven, partition-tolerant distributed state machine operating system kernel prototype built on a Raft consensus protocol in Python. The system adapts its workload orchestration by constraining the AI controller's mutation space to desired state specifications, demonstrating cluster consistency, log replays, and snapshot recovery.
+An experimental prototype of a partition-tolerant distributed state machine operating system control plane built on a customized Raft-like consensus protocol in Python. The system demonstrates how a consensus engine can integrate with a Bayesian belief state observer (POMDP-lite) to dynamically adapt network parameters, retry schedules, and leader reelection timeouts under varying network conditions.
 
 ---
 
-## Key Features
+## Capabilities and Features
 
-1. **Raft Consensus Protocol**: Implementation of leader election, randomized timeouts, log replication, term safety, and quorum commits over asynchronous TCP connections.
-2. **State Recovery & Compaction**: Snapshot creation and log compaction. Nodes prune historical logs and recover state from disk snapshots and committed log tail replays upon reboot.
-3. **Pure State Reduction**: Event-sourced state transitions. The state is reconstructed by replaying committed logs to a state reducer.
-4. **Constrained AI Orchestration**: A bounded AI Controller evaluates performance metrics and updates the desired state JSON specification.
-5. **Decentralized Control Loops**: Node managers that run reconciler engines on leader nodes.
-6. **HTTP REST API Server**: Every node exposes a REST API server to query internal consensus states, node state machines, peer beliefs, and submit task proposals.
+1. **Consensus Core (Raft-like Prototype)**: Educational implementation of consensus rules including leader election, randomized timeouts, log replication, term validation, and quorum commits over asynchronous TCP connections.
+2. **State Recovery & Compaction**: Local Write-Ahead Log (WAL) persistence and snapshotted state checkpoints. Demonstrates historical log truncation and recovery of state from disk snapshots.
+3. **Pure State Reduction**: Event-sourced state machine where the current node state is reconstructed by replaying committed log entries to a state reducer.
+4. **Bayesian Belief Engine (POMDP-lite)**: Monitors RPC successes and latencies to maintain a probability distribution over peer health states (`HEALTHY`, `SLOW`, `DEAD`).
+5. **Adaptive Network Jitter & Backoffs**:
+   - Follower reelection timeouts dynamically shrink if the current leader is suspected to have failed (speeding up failovers).
+   - Leader heartbeat/retry intervals dynamically expand when sending to suspected slow or dead nodes to prevent network congestion.
+   - Vote decisions verify candidate trust scores to deprioritize unstable nodes.
+6. **HTTP REST API Server**: Exposes endpoints on each node to query current consensus terms, log metadata, belief matrices, and to propose state mutations.
 
 ---
 
 ## Project Structure
 
+The codebase is organized as follows:
+
 ```text
-adaptive-ai-os/
+cognitive_shell/
 │
-├── ai/
-│   ├── cognitive.py           # Unified cognitive system
-│   ├── controller.py          # Bounded AI controller querying desired states
-│   ├── evaluator.py           # Evaluates execution results & priorities
-│   ├── gemini_client.py       # Zero-dependency Gemini API client
-│   └── planner.py             # Translates goals to task command specs
+├── cognitive/
+│   ├── belief_engine/
+│   │   └── engine.py         # Bayesian belief updater (POMDP-lite)
+│   ├── observation_layer/
+│   │   └── observer.py       # Maps latency and success to observations
+│   ├── cognitive.py          # Unified AI belief coordinator
+│   ├── controller.py         # Updates desired states based on specifications
+│   ├── evaluator.py          # Assesses priority levels
+│   ├── gemini_client.py      # Stub client structure for LLM interaction
+│   └── planner.py            # Generates execution plan steps
 │
-├── api/
-│   └── server.py              # HTTP REST API server
+├── core/
+│   ├── log/
+│   │   └── model.py          # Raft log entries and compaction model
+│   ├── raft/
+│   │   └── node.py           # Core Raft consensus protocol rules
+│   ├── state_machine/
+│   │   └── reducer.py        # Event-sourced state machine transitions
+│   └── transport/
+│       ├── client.py         # Async TCP connection pool & client sockets
+│       └── server.py         # Async TCP line-oriented network server
 │
-├── network/
-│   ├── client.py              # Async TCP network client
-│   └── server.py              # Async TCP network server
-│
-├── raft/
-│   ├── log.py                 # Raft log index model and compaction
-│   └── node.py                # Core Raft state and consensus logic
-│
-├── runtime/
-│   ├── loop.py                # Asynchronous orchestrator loop
-│   ├── scheduler.py           # Priority scheduler queues
-│   └── telemetry.py           # Telemetry metrics and structured logging
-│
-├── state/
-│   └── reducer.py             # Deterministic event-sourced state reducer
+├── node/
+│   ├── runtime/
+│   │   ├── executor.py       # Subprocess task runner (executes 'sh' commands)
+│   │   ├── loop.py           # Asynchronous orchestrator control loops
+│   │   ├── scheduler.py      # Reconciler task scheduler
+│   │   └── telemetry.py      # structured logger and telemetry recorder
+│   └── server/
+│       ├── __main__.py       # CLI launcher exposing HTTP API
+│       └── config.py         # Typed PyYAML validation and schemas
 │
 ├── storage/
-│   └── log_store.py           # Disk storage for logs, states, and snapshots
+│   ├── snapshots/
+│   │   └── store.py          # Checkpoint snapshots directory serializer
+│   └── wal/
+│       └── store.py          # Write-Ahead Log state writer
 │
-├── workers/
-│   ├── executor.py            # Local process shell executor (sh/wsl)
-│   └── worker.py              # Worker task dispatcher
+├── tests/
+│   └── integration/
+│       └── test_cluster.py   # Complete cluster integration test suite
 │
-├── config.yaml                # Cluster configuration file
-├── run.py                     # Local cluster simulation runner
-└── test_core.py               # Unit and integration test suite
+├── config.yaml               # Cluster node topology configuration
+├── peers.json                # Legacy node mapping wrapper configuration
+├── run.py                    # 3-node cluster simulation script
+└── venv/                     # Python virtual environment directory
 ```
 
 ---
 
 ## REST API Interface
 
-API HTTP servers are launched alongside each node (API Port = Node Port + 1000). For example, Node 0 on port 5001 hosts its API on port `6001`.
+API HTTP servers are launched alongside each node (API Port = Raft Node Port + 1000). For example, Node 1 on port 5001 hosts its API on port `6001`.
 
 ### 1. Query State
-* **Endpoint**: `GET /state`
-* **Response Payload**:
+- **Endpoint**: `GET /state`
+- **Response Payload**:
   ```json
   {
     "node_id": "1",
@@ -79,18 +94,24 @@ API HTTP servers are launched alongside each node (API Port = Node Port + 1000).
       "task-1": "done",
       "task-2": "running"
     },
-    "log_length": 6
+    "log_length": 6,
+    "beliefs": {
+      "2": [0.99, 0.009, 0.001]
+    },
+    "suspicion_scores": {
+      "2": 0.005
+    }
   }
   ```
 
 ### 2. Propose Mutation Command
-* **Endpoint**: `POST /propose`
-* **Request Payload**:
+- **Endpoint**: `POST /propose`
+- **Request Payload**:
   ```json
   {
     "type": "DESIRED_STATE_UPDATE",
     "payload": {
-      "tasks": [{"id": "new-task", "target": "wsl", "command": "echo 'Hello'"}]
+      "tasks": [{"id": "new-task", "target": "sh", "command": "echo 'Hello'"}]
     }
   }
   ```
@@ -99,18 +120,18 @@ API HTTP servers are launched alongside each node (API Port = Node Port + 1000).
 
 ## Running the Simulation
 
-Execute the local simulation to run a 3-node cluster, simulate transactions, terminate the leader, witness automatic reelection, reboot the dead node, and verify complete cluster state synchronization:
+Execute the local simulation to run a 3-node cluster, propose client transactions, terminate the leader, observe reelection, recover the dead node, and verify cluster state alignment:
 
-```bash
-python run.py
+```powershell
+.\venv\Scripts\python run.py
 ```
 
 ---
 
-## Running Unit Tests
+## Running Integration Tests
 
-Run the core unit tests (covering log compaction index shifting, conflict truncations, deterministic state reductions, and term safety rules):
+Run the integration test suite covering election convergence, reboot recoveries, network partitions, and dynamic belief engine timeout transitions:
 
-```bash
-python test_core.py
+```powershell
+.\venv\Scripts\python -m unittest tests/integration/test_cluster.py
 ```
