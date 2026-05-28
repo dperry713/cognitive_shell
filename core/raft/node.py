@@ -2,7 +2,7 @@ import time
 import random
 from typing import Any, Dict, List, Optional, Set
 from core.log.model import RaftLog, LogEntry
-from cognitive.belief_engine.engine import BeliefEngine
+from cognitive.belief_engine.engine import BeliefEngine, TIMEOUT, HIGH_LATENCY
 
 class RaftNode:
     def __init__(self, node_id: str, peers: List[str], config: Dict[str, Any]) -> None:
@@ -42,6 +42,7 @@ class RaftNode:
 
         # Belief engine (POMDP-lite)
         self.belief_engine: BeliefEngine = BeliefEngine(self.peers)
+        self.last_leader_belief_update: float = 0.0
 
     def load_persistent_state(self, state_data: Dict[str, Any], log_data: Dict[str, Any]) -> None:
         self.current_term = state_data.get("current_term", 0)
@@ -82,6 +83,16 @@ class RaftNode:
         """
         if self.state == "leader":
             return None
+
+        # Check for missing heartbeats from the active leader to update belief state
+        if self.current_leader:
+            elapsed = time.time() - self.last_heartbeat_time
+            now = time.time()
+            if elapsed >= self.heartbeat_interval * 1.5 and (now - self.last_leader_belief_update >= self.heartbeat_interval):
+                self.last_leader_belief_update = now
+                obs = TIMEOUT if elapsed >= self.heartbeat_interval * 3.0 else HIGH_LATENCY
+                if self.current_leader in self.belief_engine.beliefs:
+                    self.belief_engine.update_belief(self.current_leader, obs)
 
         # Check timeout with belief engine bias update
         if time.time() - self.last_heartbeat_time >= self.election_timeout:
@@ -130,7 +141,11 @@ class RaftNode:
                 log_ok = True
 
         granted = False
-        if (self.voted_for is None or self.voted_for == candidate_id) and log_ok:
+        candidate_trust = 1.0
+        if candidate_id in self.belief_engine.beliefs:
+            candidate_trust = self.belief_engine.beliefs[candidate_id][0] # P(HEALTHY)
+
+        if (self.voted_for is None or self.voted_for == candidate_id) and log_ok and (candidate_trust >= 0.25):
             self.voted_for = candidate_id
             self.reset_election_timer()
             self.storage_dirty = True

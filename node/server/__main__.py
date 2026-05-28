@@ -5,7 +5,7 @@ import sys
 import threading
 import asyncio
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from node.runtime.loop import Orchestrator
 
@@ -112,43 +112,56 @@ class APIServer:
             del APIServer.orchestrators_map[self.port]
 
 
+from node.server.config import load_and_validate_config
+
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Adaptive AI OS Raft Node Runner")
     parser.add_argument("--id", required=True, type=str, help="Unique node identifier")
-    parser.add_argument("--peers", required=True, type=str, help="Path to JSON file containing cluster peer definition config")
+    parser.add_argument("--peers", required=True, type=str, help="Path to JSON/YAML file containing cluster peer definition config")
     
     args = parser.parse_args()
     
-    # Load peers JSON
-    if not os.path.exists(args.peers):
-        print(f"Error: Peers config file not found: {args.peers}")
+    # Load and validate config using typed schemas
+    try:
+        config_obj = load_and_validate_config(args.peers)
+    except Exception as e:
+        print(f"Configuration validation failed: {e}")
         sys.exit(1)
         
-    with open(args.peers, "r") as f:
-        peers_data = json.load(f)
-        
-    # Standardised cluster config structure
-    cluster_config = {
-        "cluster": {
-            "nodes": peers_data
-        },
-        "raft": {
-            "election_timeout_min": 0.150,
-            "election_timeout_max": 0.300,
-            "heartbeat_interval": 0.050
-        },
-        "logging": {"level": "INFO"}
-    }
-    
-    node_config = peers_data.get(args.id)
+    node_config = config_obj.nodes.get(args.id)
     if not node_config:
         print(f"Error: Node ID '{args.id}' not defined in peers file {args.peers}")
         sys.exit(1)
+
+    # Convert ClusterConfig to dictionary structure for backward compatibility
+    cluster_config = {
+        "cluster": {
+            "nodes": {
+                nid: {
+                    "host": cfg.host,
+                    "raft_port": cfg.raft_port,
+                    "api_port": cfg.api_port
+                }
+                for nid, cfg in config_obj.nodes.items()
+            }
+        },
+        "raft": {
+            "election_timeout_min": config_obj.raft.election_timeout_min,
+            "election_timeout_max": config_obj.raft.election_timeout_max,
+            "heartbeat_interval": config_obj.raft.heartbeat_interval
+        },
+        "cognitive": {
+            "decay_rate": config_obj.cognitive.decay_rate,
+            "latency_threshold_slow": config_obj.cognitive.latency_threshold_slow,
+            "latency_threshold_dead": config_obj.cognitive.latency_threshold_dead
+        },
+        "logging": {"level": config_obj.logging_level}
+    }
         
     orchestrator = Orchestrator(args.id, cluster_config)
     await orchestrator.start()
     
-    api_port = node_config.get("api_port", int(node_config.get("raft_port", 5001)) + 1000)
+    api_port = node_config.api_port
     api_server = APIServer(orchestrator, api_port)
     api_server.start()
     

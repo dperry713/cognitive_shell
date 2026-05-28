@@ -1,0 +1,69 @@
+{
+  "last_snapshot_index": 15,
+  "last_snapshot_term": 3,
+  "entries": [
+    {
+      "term": 3,
+      "index": 16,
+      "command": {
+        "type": "DESIRED_STATE_UPDATE",
+        "payload": {
+          "tasks": [
+            {
+              "id": "task-100",
+              "target": "sh",
+              "command": "echo 'Consensus Active'"
+            },
+            {
+              "id": "task-2",
+              "target": "sh",
+              "command": "echo 'Task 2 execution output'"
+            },
+            {
+              "id": "task-3",
+              "target": "sh",
+              "command": "echo 'Task 3 execution output'"
+            },
+            {
+              "id": "task-4",
+              "target": "sh",
+              "command": "echo 'Task 4 execution output'"
+            },
+            {
+              "id": "task-5",
+              "target": "sh",
+              "command": "echo 'Task 5 execution output'"
+            }
+          ],
+          "priority": "normal",
+          "replicas": 3
+        }
+      }
+    },
+    {
+      "term": 3,
+      "index": 17,
+      "command": {
+        "type": "TASK_RUNNING",
+        "payload": {
+          "id": "task-5"
+        }
+      }
+    },
+    {
+      "term": 3,
+      "index": 18,
+      "command": {
+        "type": "TASK_DONE",
+        "payload": {
+          "id": "task-5",
+          "result": {
+            "stdout": "'Task 5 execution output'\n",
+            "stderr": "",
+            "returncode": 0
+          }
+        }
+      }
+    }
+  ]
+}

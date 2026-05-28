@@ -10,6 +10,7 @@ from core.transport.server import NetworkServer
 from core.transport.client import NetworkClient
 from cognitive.cognitive import CognitiveSystem
 from cognitive.gemini_client import GeminiClient
+from cognitive.belief_engine.engine import MATCH
 from cognitive.planner import AIPlanner
 from cognitive.evaluator import AIEvaluator
 from cognitive.controller import AIController
@@ -77,7 +78,7 @@ class Orchestrator:
         snapshot_data = self.snapshot_storage.load_snapshot()
         
         self.node.load_persistent_state(state_data, log_data)
-        self.state_machine.reset_to_snapshot(snapshot_data.get("state", {}))
+        self.state_machine.restore_snapshot(snapshot_data)
         
         self.node.last_applied = self.node.log.last_snapshot_index
         self.apply_committed_entries(save=False)
@@ -108,6 +109,8 @@ class Orchestrator:
         if self.server:
             await self.server.stop()
 
+        await self.network_client.close()
+
         self.persist_raft_state()
         self.telemetry.log("INFO", "shutdown", "Orchestrator shut down completed gracefully")
 
@@ -134,7 +137,7 @@ class Orchestrator:
             entry = self.node.log.get_entry(next_apply)
             if entry:
                 old_state = self.state_machine.get_state()
-                new_state = self.state_machine.apply_log_entry(entry)
+                new_state = self.state_machine.apply_event(entry)
                 self.node.last_applied = next_apply
                 applied_any = True
                 
@@ -154,12 +157,18 @@ class Orchestrator:
 
     def take_local_snapshot(self, index: int, term: int, state: Dict[str, Any]) -> None:
         self.telemetry.log("INFO", "snapshot", f"Taking snapshot at index {index}")
-        self.snapshot_storage.save_snapshot(index, term, state)
+        snapshot_data = self.state_machine.snapshot(index, term)
+        self.snapshot_storage.save_snapshot(index, term, snapshot_data.get("state", {}))
         self.node.log.compact(index, term)
 
     async def process_incoming_rpc(self, msg: Dict[str, Any]) -> Dict[str, Any]:
         msg_type = msg.get("type")
+        sender = msg.get("from")
         
+        if sender and sender in self.node.belief_engine.beliefs:
+            # Active contact from peer: update belief to MATCH
+            self.node.belief_engine.update_belief(sender, MATCH)
+            
         if msg_type == "RequestVote":
             resp = self.node.handle_request_vote(msg)
         elif msg_type == "AppendEntries":
@@ -168,7 +177,7 @@ class Orchestrator:
             resp = self.node.handle_install_snapshot(msg)
             if resp.get("success"):
                 snapshot_data = msg.get("data", {})
-                self.state_machine.reset_to_snapshot(snapshot_data)
+                self.state_machine.restore_snapshot({"state": snapshot_data})
                 self.snapshot_storage.save_snapshot(self.node.commit_index, self.node.current_term, snapshot_data)
         else:
             return {"error": f"Unknown RPC: {msg_type}"}

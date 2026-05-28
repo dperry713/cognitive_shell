@@ -1,17 +1,17 @@
-# Adaptive AI OS (Distributed State Machine Kernel)
+# Adaptive AI OS (Distributed State Machine Kernel Prototype)
 
-An AI-driven, partition-tolerant distributed state machine operating system kernel built on **real Raft consensus** in Python. The system adapts its workload orchestration safely by constraining the AI controller's mutation space to desired state specifications only, while guaranteeing cluster consistency, deterministic replays, and recovery from total failure.
+An experimental AI-driven, partition-tolerant distributed state machine operating system kernel prototype built on a Raft consensus protocol in Python. The system adapts its workload orchestration by constraining the AI controller's mutation space to desired state specifications, demonstrating cluster consistency, log replays, and snapshot recovery.
 
 ---
 
 ## Key Features
 
-1. **Failure Tolerance & Real Raft Consensus**: Complete implementation of leader election, randomized election timers, log replication, term safety, and quorum commits over asynchronous TCP connections.
-2. **Crash Recovery & Snapshots**: Automated snapshot creation and log compaction. Nodes prune historical logs and recover state from disk snapshots and committed log tail replays upon reboot.
-3. **Pure State Reduction**: Clean event-sourced state transitions. The state is deterministically reconstructed by feeding committed Raft logs to a pure state reducer.
-4. **Constrained AI Orchestration**: A bounded AI Controller evaluates performance metrics and updates *only* the desired state JSON specification. No direct execution authority is granted to the AI.
-5. **Decentralized Control Loops**: Independent node managers that lock onto active leadership transitions to run reconciler engines.
-6. **HTTP REST API Server**: Every node exposes a REST API server to query internal consensus states, node state machines, and submit task proposals.
+1. **Raft Consensus Protocol**: Implementation of leader election, randomized timeouts, log replication, term safety, and quorum commits over asynchronous TCP connections.
+2. **State Recovery & Compaction**: Snapshot creation and log compaction. Nodes prune historical logs and recover state from disk snapshots and committed log tail replays upon reboot.
+3. **Pure State Reduction**: Event-sourced state transitions. The state is reconstructed by replaying committed logs to a state reducer.
+4. **Constrained AI Orchestration**: A bounded AI Controller evaluates performance metrics and updates the desired state JSON specification.
+5. **Decentralized Control Loops**: Node managers that run reconciler engines on leader nodes.
+6. **HTTP REST API Server**: Every node exposes a REST API server to query internal consensus states, node state machines, peer beliefs, and submit task proposals.
 
 ---
 

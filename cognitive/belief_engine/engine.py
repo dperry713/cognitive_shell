@@ -29,8 +29,9 @@ class BeliefEngine:
         ]
 
         # Observation matrix Z[s'][o]
+        # o = [LOW_LATENCY, HIGH_LATENCY, TIMEOUT, MATCH, CONFLICT]
         self.Z = [
-            [0.80, 0.10, 0.01, 0.08, 0.01],  # HEALTHY
+            [0.10, 0.01, 0.005, 0.80, 0.085],  # HEALTHY
             [0.05, 0.70, 0.15, 0.05, 0.05],  # SLOW
             [0.001, 0.001, 0.996, 0.001, 0.001]  # DEAD
         ]
@@ -98,3 +99,25 @@ class BeliefEngine:
         b = self.beliefs[peer_id]
         # P(SLOW) adds up to 5x retry interval, P(DEAD) adds up to 20x retry interval
         return 1.0 + 5.0 * b[SLOW] + 20.0 * b[DEAD]
+
+    def trust_score(self, peer_id: str) -> float:
+        """
+        Returns trust score of a peer: P(HEALTHY)
+        """
+        peer_id = str(peer_id)
+        b = self.beliefs.get(peer_id, [0.8, 0.15, 0.05])
+        return b[HEALTHY]
+
+    def leader_confidence_score(self, current_leader_id: str) -> float:
+        """
+        Confidence in the active leader: 1.0 - suspicion_score(leader_id)
+        """
+        return 1.0 - self.suspicion_score(current_leader_id)
+
+    def network_reliability_estimate(self) -> float:
+        """
+        Estimate overall network reliability as the average trust score of all peers.
+        """
+        if not self.peers:
+            return 1.0
+        return sum(self.trust_score(p) for p in self.peers) / len(self.peers)

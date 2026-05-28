@@ -1,0 +1,72 @@
+{
+  "last_included_index": 15,
+  "last_included_term": 3,
+  "state": {
+    "desired_state": {
+      "tasks": [
+        {
+          "id": "task-100",
+          "target": "sh",
+          "command": "echo 'Consensus Active'"
+        },
+        {
+          "id": "task-2",
+          "target": "sh",
+          "command": "echo 'Task 2 execution output'"
+        },
+        {
+          "id": "task-3",
+          "target": "sh",
+          "command": "echo 'Task 3 execution output'"
+        },
+        {
+          "id": "task-4",
+          "target": "sh",
+          "command": "echo 'Task 4 execution output'"
+        }
+      ],
+      "priority": "normal",
+      "replicas": 3
+    },
+    "task-1": {
+      "status": "done",
+      "result": {
+        "stdout": "'Task 1 execution output'\n",
+        "stderr": "",
+        "returncode": 0
+      }
+    },
+    "task-100": {
+      "status": "done",
+      "result": {
+        "stdout": "'Consensus Active'\n",
+        "stderr": "",
+        "returncode": 0
+      }
+    },
+    "task-2": {
+      "status": "done",
+      "result": {
+        "stdout": "'Task 2 execution output'\n",
+        "stderr": "",
+        "returncode": 0
+      }
+    },
+    "task-3": {
+      "status": "done",
+      "result": {
+        "stdout": "'Task 3 execution output'\n",
+        "stderr": "",
+        "returncode": 0
+      }
+    },
+    "task-4": {
+      "status": "done",
+      "result": {
+        "stdout": "'Task 4 execution output'\n",
+        "stderr": "",
+        "returncode": 0
+      }
+    }
+  }
+}
