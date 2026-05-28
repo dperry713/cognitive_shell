@@ -1,25 +1,14 @@
-import json
-import time
-import uuid
-
 class EventLog:
-    def __init__(self):
-        self.entries = []
-        self.committed_index = 0
+    def __init__(self, node=None):
+        self.node = node
 
-    def append(self, event_type, payload):
-        entry = {
-            "id": str(uuid.uuid4()),
-            "type": event_type,
-            "payload": payload,
-            "ts": time.time()
-        }
-
-        self.entries.append(entry)
-        return entry
-
-    def commit(self, index):
-        self.committed_index = index
-
-    def get_committed(self):
-        return self.entries[:self.committed_index]
+    def get_committed_events(self):
+        """
+        Retrieves committed log entries from the node's local Raft log.
+        """
+        if not self.node:
+            return []
+            
+        # Get entries up to node's committed index
+        entries = self.node.log.slice_from(self.node.log.last_snapshot_index + 1)
+        return [e for e in entries if e["index"] <= self.node.commit_index]
