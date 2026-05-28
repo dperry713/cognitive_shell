@@ -1,0 +1,3 @@
+# Cognitive Shell
+
+Project placeholder.
