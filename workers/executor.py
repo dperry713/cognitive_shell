@@ -2,10 +2,12 @@ import subprocess
 import asyncio
 
 def execute(task):
-    if task["target"] == "wsl":
+    target = task.get("target", "sh")
+    if target in ["sh", "wsl"]:
         try:
+            cmd = ["wsl", "sh", "-c", task["command"]] if target == "wsl" else ["sh", "-c", task["command"]]
             res = subprocess.run(
-                ["wsl", "sh", "-c", task["command"]],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=5
@@ -19,7 +21,7 @@ def execute(task):
             # Catch file not found or path errors gracefully and return error structure
             return {"error": str(e)}
 
-    return {"error": "unsupported"}
+    return {"error": f"unsupported target: {target}"}
 
 class Executor:
     def __init__(self):

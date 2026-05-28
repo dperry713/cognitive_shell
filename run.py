@@ -7,31 +7,12 @@ from raft.node import RaftNode
 from control_plane.reconciler import Reconciler
 from workers.executor import Executor
 from ai.controller import AIController
+from ai.evaluator import AIEvaluator
+from ai.planner import AIPlanner
+from ai.gemini_client import GeminiClient
 from control_plane.controller_manager import ControllerManager
 from runtime.loop import ControlLoop
 from api.server import APIServer
-
-class MockGeminiClient:
-    def __init__(self):
-        self.count = 0
-
-    def generate(self, prompt):
-        self.count += 1
-        # Generates a growing list of tasks to trigger log expansion and snapshots
-        tasks = []
-        for i in range(1, min(self.count + 1, 5)):
-            tasks.append({
-                "id": f"task-{i}",
-                "target": "wsl",
-                "command": f"echo 'Task {i} execution output'"
-            })
-            
-        spec = {
-            "tasks": tasks,
-            "priority": "normal",
-            "replicas": 3
-        }
-        return json.dumps(spec)
 
 
 async def query_api_state(port):
@@ -74,7 +55,15 @@ async def run_simulation():
     print("[Simulation] Launching nodes, API servers, and control loops...")
     api_servers = {}
     loops = {}
-    mock_ai = AIController(MockGeminiClient())
+    
+    gemini_client = GeminiClient()
+    if gemini_client.has_api_key():
+        print("[Simulation] GEMINI_API_KEY found. Running AI components using the real Google Gemini API.")
+    else:
+        print("[Simulation] GEMINI_API_KEY not found. Running AI components in local heuristic fallback mode.")
+        
+    ai_controller = AIController(gemini_client)
+    ai_evaluator = AIEvaluator(gemini_client)
     executor = Executor()
 
     for node_id, node in nodes.items():
@@ -87,8 +76,8 @@ async def run_simulation():
 
         # Start Node Control Loop & Manager
         reconciler = Reconciler(node, executor)
-        manager = ControllerManager(node, reconciler, mock_ai, None)
-        loop = ControlLoop(node, reconciler, mock_ai, manager, check_interval=1.0)
+        manager = ControllerManager(node, reconciler, ai_controller, ai_evaluator)
+        loop = ControlLoop(node, reconciler, ai_controller, manager, check_interval=1.0)
         await loop.start()
         loops[node_id] = loop
         
@@ -159,8 +148,8 @@ async def run_simulation():
     api_servers[leader_id] = api
 
     reconciler = Reconciler(rebooted, executor)
-    manager = ControllerManager(rebooted, reconciler, mock_ai, None)
-    loop = ControlLoop(rebooted, reconciler, mock_ai, manager, check_interval=1.0)
+    manager = ControllerManager(rebooted, reconciler, ai_controller, ai_evaluator)
+    loop = ControlLoop(rebooted, reconciler, ai_controller, manager, check_interval=1.0)
     await loop.start()
     loops[leader_id] = loop
 

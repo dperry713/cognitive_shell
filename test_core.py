@@ -143,5 +143,74 @@ class TestConsensusRPC(unittest.TestCase):
         self.assertEqual(len(node.applied_entries), 2)
 
 
+class TestExecutorAndAIComponents(unittest.TestCase):
+    def test_executor_targets(self):
+        from unittest.mock import patch, MagicMock
+        from workers.executor import execute
+
+        # Mock subprocess.run to verify correct target translation
+        with patch("subprocess.run") as mock_run:
+            mock_res = MagicMock()
+            mock_res.stdout = "ok"
+            mock_res.stderr = ""
+            mock_res.returncode = 0
+            mock_run.return_value = mock_res
+
+            # Test WSL target
+            res_wsl = execute({"id": "t1", "target": "wsl", "command": "echo 1"})
+            mock_run.assert_called_with(
+                ["wsl", "sh", "-c", "echo 1"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            self.assertEqual(res_wsl["stdout"], "ok")
+
+            # Test native sh target
+            res_sh = execute({"id": "t2", "target": "sh", "command": "echo 2"})
+            mock_run.assert_called_with(
+                ["sh", "-c", "echo 2"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            self.assertEqual(res_sh["stdout"], "ok")
+
+            # Test unsupported target
+            res_invalid = execute({"id": "t3", "target": "invalid", "command": "echo 3"})
+            self.assertIn("error", res_invalid)
+            self.assertIn("unsupported target", res_invalid["error"])
+
+    def test_gemini_client_fallback(self):
+        from ai.gemini_client import GeminiClient
+        from ai.controller import AIController
+        from ai.planner import AIPlanner
+        from ai.evaluator import AIEvaluator
+
+        # Initialize client without API key to trigger fallbacks
+        client = GeminiClient(api_key="")
+        self.assertFalse(client.has_api_key())
+
+        # Test controller fallback
+        controller = AIController(client)
+        spec = {"tasks": [], "priority": "normal", "replicas": 3}
+        state = {"task-1": "done"}
+        updated_spec = controller.evaluate_and_update(state, spec)
+        self.assertEqual(len(updated_spec["tasks"]), 1)
+        self.assertEqual(updated_spec["tasks"][0]["id"], "task-1")
+
+        # Test planner fallback
+        planner = AIPlanner(client)
+        tasks = planner.plan_goal("run diagnostics")
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0]["id"], "diagnostic-task-1")
+
+        # Test evaluator fallback
+        evaluator = AIEvaluator(client)
+        eval_result = evaluator.evaluate_performance({"task-1": {"result": {"returncode": 1}}})
+        self.assertEqual(eval_result["priority"], "high")
+        self.assertTrue(eval_result["suggest_retry"])
+
+
 if __name__ == "__main__":
     unittest.main()

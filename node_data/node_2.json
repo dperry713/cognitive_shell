@@ -1,66 +1,38 @@
 {
-  "current_term": 4,
-  "voted_for": "0",
+  "current_term": 2,
+  "voted_for": "1",
   "log_entries": [
     {
-      "term": 4,
-      "index": 21,
+      "term": 2,
+      "index": 26,
       "command": {
         "type": "DESIRED_STATE_UPDATE",
         "payload": {
           "tasks": [
             {
               "id": "task-1",
-              "target": "wsl",
+              "target": "sh",
               "command": "echo 'Task 1 execution output'"
             },
             {
               "id": "task-2",
-              "target": "wsl",
+              "target": "sh",
               "command": "echo 'Task 2 execution output'"
             },
             {
               "id": "task-3",
-              "target": "wsl",
+              "target": "sh",
               "command": "echo 'Task 3 execution output'"
             },
             {
               "id": "task-4",
-              "target": "wsl",
+              "target": "sh",
               "command": "echo 'Task 4 execution output'"
-            }
-          ],
-          "priority": "normal",
-          "replicas": 3
-        }
-      }
-    },
-    {
-      "term": 4,
-      "index": 22,
-      "command": {
-        "type": "DESIRED_STATE_UPDATE",
-        "payload": {
-          "tasks": [
-            {
-              "id": "task-1",
-              "target": "wsl",
-              "command": "echo 'Task 1 execution output'"
             },
             {
-              "id": "task-2",
-              "target": "wsl",
-              "command": "echo 'Task 2 execution output'"
-            },
-            {
-              "id": "task-3",
-              "target": "wsl",
-              "command": "echo 'Task 3 execution output'"
-            },
-            {
-              "id": "task-4",
-              "target": "wsl",
-              "command": "echo 'Task 4 execution output'"
+              "id": "task-5",
+              "target": "sh",
+              "command": "echo 'Task 5 execution output'"
             }
           ],
           "priority": "normal",
@@ -69,30 +41,35 @@
       }
     }
   ],
-  "last_snapshot_index": 20,
-  "last_snapshot_term": 4,
+  "last_snapshot_index": 25,
+  "last_snapshot_term": 2,
   "snapshot_state": {
     "desired_state": {
       "tasks": [
         {
           "id": "task-1",
-          "target": "wsl",
+          "target": "sh",
           "command": "echo 'Task 1 execution output'"
         },
         {
           "id": "task-2",
-          "target": "wsl",
+          "target": "sh",
           "command": "echo 'Task 2 execution output'"
         },
         {
           "id": "task-3",
-          "target": "wsl",
+          "target": "sh",
           "command": "echo 'Task 3 execution output'"
         },
         {
           "id": "task-4",
-          "target": "wsl",
+          "target": "sh",
           "command": "echo 'Task 4 execution output'"
+        },
+        {
+          "id": "task-5",
+          "target": "sh",
+          "command": "echo 'Task 5 execution output'"
         }
       ],
       "priority": "normal",
@@ -101,8 +78,9 @@
     "task-1": "done",
     "task-2": "done",
     "task-3": "done",
-    "task-4": "done"
+    "task-4": "done",
+    "task-5": "done"
   },
-  "commit_index": 22,
-  "last_applied": 22
+  "commit_index": 26,
+  "last_applied": 26
 }
