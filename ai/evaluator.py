@@ -52,7 +52,6 @@ Example response:
 
     def _heuristic_fallback(self, actual_state):
         recommendations = {
-            "priority": "normal",
             "suggest_retry": False,
             "analysis": "Heuristic fallback evaluation."
         }

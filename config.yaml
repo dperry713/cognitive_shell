@@ -1,0 +1,23 @@
+cluster:
+  nodes:
+    "0":
+      host: "127.0.0.1"
+      raft_port: 5001
+      api_port: 6001
+    "1":
+      host: "127.0.0.1"
+      raft_port: 5002
+      api_port: 6002
+    "2":
+      host: "127.0.0.1"
+      raft_port: 5003
+      api_port: 6003
+
+raft:
+  election_timeout_min: 0.150
+  election_timeout_max: 0.300
+  heartbeat_interval: 0.050
+
+logging:
+  level: "INFO"
+  format: "json"

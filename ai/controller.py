@@ -56,10 +56,13 @@ Keep the structure valid and return NO markdown wrapping or extra text.
             return self._heuristic_fallback(state, current_desired_spec)
 
     def _heuristic_fallback(self, state, current_desired_spec):
-        # Heuristically align or expand tasks for simulation/test runs
         new_spec = json.loads(json.dumps(current_desired_spec))
-        tasks = new_spec.get("tasks", [])
         
+        # If priority is 'high' or 'low', preserve it and do not auto-append tasks
+        if current_desired_spec.get("priority") in ["high", "low"]:
+            return new_spec
+
+        tasks = new_spec.get("tasks", [])
         all_done = True
         for task in tasks:
             if state.get(task["id"]) != "done":

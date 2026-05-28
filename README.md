@@ -21,38 +21,41 @@ An AI-driven, partition-tolerant distributed state machine operating system kern
 adaptive-ai-os/
 │
 ├── ai/
+│   ├── cognitive.py           # Unified cognitive system
 │   ├── controller.py          # Bounded AI controller querying desired states
-│   ├── evaluator.py           # Evaluates execution results & makes priorities
-│   └── planner.py             # Translates goals to commands
-│
-├── control_plane/
-│   ├── reconciler.py          # Compares desired specification to actual state
-│   ├── desired_state.py       # Holds versioned target specifications
-│   └── controller_manager.py  # Spawns and stops controllers on leader shift
-│
-├── raft/
-│   ├── node.py                # Handles TCP sockets, loops, and elections
-│   ├── log.py                 # Raft log index model and compaction
-│   └── consensus.py           # RequestVote, AppendEntries, InstallSnapshot rules
-│
-├── log/
-│   ├── event_log.py           # Exposes committed log audit tails
-│   ├── state_engine.py        # Pure state reducer logic
-│   └── snapshot.py            # Local disk persistence for snapshots
-│
-├── workers/
-│   ├── worker.py              # Asynchronous worker task runner
-│   └── executor.py            # Subprocess execution unit (e.g. WSL)
-│
-├── runtime/
-│   ├── loop.py                # Asynchronous orchestration control loop
-│   └── scheduler.py           # Load limits & priority queues
+│   ├── evaluator.py           # Evaluates execution results & priorities
+│   ├── gemini_client.py       # Zero-dependency Gemini API client
+│   └── planner.py             # Translates goals to task command specs
 │
 ├── api/
-│   └── server.py              # Lightweight HTTP JSON API server
+│   └── server.py              # HTTP REST API server
 │
-├── run.py                     # 3-Node local cluster simulation runner
-└── test_core.py               # Unit test suite (Raft log, consensus, reducers)
+├── network/
+│   ├── client.py              # Async TCP network client
+│   └── server.py              # Async TCP network server
+│
+├── raft/
+│   ├── log.py                 # Raft log index model and compaction
+│   └── node.py                # Core Raft state and consensus logic
+│
+├── runtime/
+│   ├── loop.py                # Asynchronous orchestrator loop
+│   ├── scheduler.py           # Priority scheduler queues
+│   └── telemetry.py           # Telemetry metrics and structured logging
+│
+├── state/
+│   └── reducer.py             # Deterministic event-sourced state reducer
+│
+├── storage/
+│   └── log_store.py           # Disk storage for logs, states, and snapshots
+│
+├── workers/
+│   ├── executor.py            # Local process shell executor (sh/wsl)
+│   └── worker.py              # Worker task dispatcher
+│
+├── config.yaml                # Cluster configuration file
+├── run.py                     # Local cluster simulation runner
+└── test_core.py               # Unit and integration test suite
 ```
 
 ---

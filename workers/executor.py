@@ -1,17 +1,30 @@
 import subprocess
 import asyncio
 
+import os
+
 def execute(task):
     target = task.get("target", "sh")
     if target in ["sh", "wsl"]:
         try:
             cmd = ["wsl", "sh", "-c", task["command"]] if target == "wsl" else ["sh", "-c", task["command"]]
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            try:
+                res = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+            except FileNotFoundError as e:
+                if target == "sh" and os.name == "nt":
+                    res = subprocess.run(
+                        ["cmd.exe", "/c", task["command"]],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                else:
+                    raise e
             return {
                 "stdout": res.stdout,
                 "stderr": res.stderr,

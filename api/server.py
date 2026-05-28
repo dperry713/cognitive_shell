@@ -7,17 +7,16 @@ class RaftAPIHandler(BaseHTTPRequestHandler):
         # Suppress logging default lines to standard output
         return
 
-    def get_node(self):
-        # Retrieve the node associated with this handler's server port
+    def get_orchestrator(self):
         port = self.server.server_address[1]
-        return APIServer.nodes_map.get(port)
+        return APIServer.orchestrators_map.get(port)
 
     def do_GET(self):
-        node = self.get_node()
-        if not node:
+        orchestrator = self.get_orchestrator()
+        if not orchestrator:
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(b"Node not mapped to server port.")
+            self.wfile.write(b"Orchestrator not mapped to server port.")
             return
 
         if self.path == "/state":
@@ -25,13 +24,14 @@ class RaftAPIHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             
+            node = orchestrator.node
             response = {
                 "node_id": node.node_id,
                 "state": node.state,
                 "current_term": node.current_term,
                 "commit_index": node.commit_index,
                 "last_applied": node.last_applied,
-                "actual_state": node.actual_state,
+                "actual_state": orchestrator.state_machine.get_state(),
                 "log_length": len(node.log.entries)
             }
             self.wfile.write(json.dumps(response).encode("utf-8"))
@@ -40,11 +40,11 @@ class RaftAPIHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        node = self.get_node()
-        if not node:
+        orchestrator = self.get_orchestrator()
+        if not orchestrator:
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(b"Node not mapped to server port.")
+            self.wfile.write(b"Orchestrator not mapped to server port.")
             return
 
         if self.path == "/propose":
@@ -52,8 +52,9 @@ class RaftAPIHandler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             try:
                 command = json.loads(body.decode("utf-8"))
-                success = node.propose(command)
+                success = orchestrator.node.propose(command)
                 if success:
+                    orchestrator.persist_raft_state()
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
@@ -70,18 +71,17 @@ class RaftAPIHandler(BaseHTTPRequestHandler):
 
 
 class APIServer:
-    # Port to node lookup map
-    nodes_map = {}
+    # Port to orchestrator lookup map
+    orchestrators_map = {}
 
-    def __init__(self, node, port):
-        self.node = node
+    def __init__(self, orchestrator, port):
+        self.orchestrator = orchestrator
         self.port = port + 1000  # Listen on port + 1000 (e.g. 6001 for port 5001)
         self.httpd = None
         self.thread = None
 
     def start(self):
-        # Map port to node instance before starting HTTP serving
-        APIServer.nodes_map[self.port] = self.node
+        APIServer.orchestrators_map[self.port] = self.orchestrator
         self.httpd = HTTPServer(("127.0.0.1", self.port), RaftAPIHandler)
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -91,6 +91,5 @@ class APIServer:
         if self.httpd:
             self.httpd.shutdown()
             self.httpd.server_close()
-        # Clean port map
-        if self.port in APIServer.nodes_map:
-            del APIServer.nodes_map[self.port]
+        if self.port in APIServer.orchestrators_map:
+            del APIServer.orchestrators_map[self.port]
