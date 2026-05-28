@@ -1,0 +1,102 @@
+{
+  "current_term": 2,
+  "voted_for": null,
+  "log_entries": [
+    {
+      "term": 2,
+      "index": 16,
+      "command": {
+        "type": "TASK_RUNNING",
+        "payload": {
+          "id": "task-4"
+        }
+      }
+    },
+    {
+      "term": 2,
+      "index": 17,
+      "command": {
+        "type": "TASK_RUNNING",
+        "payload": {
+          "id": "task-5"
+        }
+      }
+    },
+    {
+      "term": 2,
+      "index": 18,
+      "command": {
+        "type": "TASK_DONE",
+        "payload": {
+          "id": "task-4",
+          "result": {
+            "stdout": "",
+            "stderr": "/bin/sh: bash: not found\n",
+            "returncode": 127
+          }
+        }
+      }
+    },
+    {
+      "term": 2,
+      "index": 19,
+      "command": {
+        "type": "TASK_DONE",
+        "payload": {
+          "id": "task-5",
+          "result": {
+            "stdout": "",
+            "stderr": "/bin/sh: bash: not found\n",
+            "returncode": 127
+          }
+        }
+      }
+    }
+  ],
+  "last_snapshot_index": 15,
+  "last_snapshot_term": 2,
+  "snapshot_state": {
+    "desired_state": {
+      "tasks": [
+        {
+          "id": "task-1",
+          "target": "wsl",
+          "command": "echo 'Task 1 execution output'"
+        },
+        {
+          "id": "task-2",
+          "target": "wsl",
+          "command": "echo 'Task 2 execution output'"
+        },
+        {
+          "id": "task-3",
+          "target": "wsl",
+          "command": "echo 'Task 3 execution output'"
+        },
+        {
+          "id": "task-4",
+          "target": "wsl",
+          "command": "echo 'Task 4 execution output'"
+        },
+        {
+          "id": "task-5",
+          "target": "wsl",
+          "command": "echo 'Task 5 execution output'"
+        },
+        {
+          "id": "task-6",
+          "target": "wsl",
+          "command": "echo 'Task 6 execution output'"
+        }
+      ],
+      "priority": "normal",
+      "replicas": 3
+    },
+    "task-1": "done",
+    "task-2": "done",
+    "task-3": "done",
+    "post-fail-task": "done"
+  },
+  "commit_index": 19,
+  "last_applied": 19
+}
