@@ -1,9 +1,9 @@
 {
-  "current_term": 2,
+  "current_term": 4,
   "voted_for": null,
   "log_entries": [
     {
-      "term": 2,
+      "term": 4,
       "index": 21,
       "command": {
         "type": "DESIRED_STATE_UPDATE",
@@ -36,74 +36,8 @@
       }
     },
     {
-      "term": 2,
+      "term": 4,
       "index": 22,
-      "command": {
-        "type": "DESIRED_STATE_UPDATE",
-        "payload": {
-          "tasks": [
-            {
-              "id": "task-1",
-              "target": "wsl",
-              "command": "echo 'Task 1 execution output'"
-            },
-            {
-              "id": "task-2",
-              "target": "wsl",
-              "command": "echo 'Task 2 execution output'"
-            },
-            {
-              "id": "task-3",
-              "target": "wsl",
-              "command": "echo 'Task 3 execution output'"
-            },
-            {
-              "id": "task-4",
-              "target": "wsl",
-              "command": "echo 'Task 4 execution output'"
-            }
-          ],
-          "priority": "normal",
-          "replicas": 3
-        }
-      }
-    },
-    {
-      "term": 2,
-      "index": 23,
-      "command": {
-        "type": "DESIRED_STATE_UPDATE",
-        "payload": {
-          "tasks": [
-            {
-              "id": "task-1",
-              "target": "wsl",
-              "command": "echo 'Task 1 execution output'"
-            },
-            {
-              "id": "task-2",
-              "target": "wsl",
-              "command": "echo 'Task 2 execution output'"
-            },
-            {
-              "id": "task-3",
-              "target": "wsl",
-              "command": "echo 'Task 3 execution output'"
-            },
-            {
-              "id": "task-4",
-              "target": "wsl",
-              "command": "echo 'Task 4 execution output'"
-            }
-          ],
-          "priority": "normal",
-          "replicas": 3
-        }
-      }
-    },
-    {
-      "term": 2,
-      "index": 24,
       "command": {
         "type": "DESIRED_STATE_UPDATE",
         "payload": {
@@ -136,7 +70,7 @@
     }
   ],
   "last_snapshot_index": 20,
-  "last_snapshot_term": 2,
+  "last_snapshot_term": 4,
   "snapshot_state": {
     "desired_state": {
       "tasks": [
@@ -169,6 +103,6 @@
     "task-3": "done",
     "task-4": "done"
   },
-  "commit_index": 24,
-  "last_applied": 24
+  "commit_index": 22,
+  "last_applied": 22
 }

@@ -5,7 +5,7 @@ def execute(task):
     if task["target"] == "wsl":
         try:
             res = subprocess.run(
-                ["wsl", "bash", "-c", task["command"]],
+                ["wsl", "sh", "-c", task["command"]],
                 capture_output=True,
                 text=True,
                 timeout=5
